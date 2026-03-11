@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>mech tower</title>
+<title>Mech tower</title>
 <style>
 body {
   margin: 0;
@@ -258,12 +258,18 @@ function drawRocks(){
 
 // Draw everything
 function draw(){
-    // Desert gradient background
-    let grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    const wallX = 100; // same as in drawWall()
+
+    // Fill area behind the wall with grey
+    ctx.fillStyle = "#888888";
+    ctx.fillRect(0, 0, wallX, canvas.height);
+
+    // Fill the rest with desert gradient
+    let grd = ctx.createLinearGradient(wallX, 0, canvas.width, 0);
     grd.addColorStop(0, "#ffb86c"); // sky
     grd.addColorStop(1, "#ff8c00"); // sand
     ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(wallX, 0, canvas.width-wallX, canvas.height);
 
     drawRocks();
     drawWall();
