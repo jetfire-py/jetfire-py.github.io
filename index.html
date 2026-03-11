@@ -1,27 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Last Mech</title>
+<title>Last Mech - Desert Battlefield</title>
 <style>
-body{
-  margin:0;
-  background:black;
-  color:white;
-  font-family:Arial;
-  overflow:hidden;
+body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+  color: white;
+  font-family: Arial;
 }
-
-#ui{
-  position:absolute;
-  top:10px;
-  left:10px;
-  font-size:18px;
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 18px;
 }
-
-canvas{
-  display:block;
-  background:#111;
-}
+canvas { display: block; }
 </style>
 </head>
 <body>
@@ -40,14 +35,15 @@ Arrow Keys = Move | Mouse = Aim | Click = Shoot | H = Hangar
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// Full screen
-function resizeCanvas(){
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+// Full-screen canvas
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
+// Game state
 let level = 1;
 let money = 0;
 let enemies = [];
@@ -55,258 +51,262 @@ let bullets = [];
 let particles = [];
 let inHangar = false;
 
+// Rocks array
+let rocks = [];
+for(let i=0; i<50; i++){
+    rocks.push({
+        x: Math.random()*window.innerWidth,
+        y: Math.random()*window.innerHeight,
+        size: 10 + Math.random()*20
+    });
+}
+
 const keys = {};
-let mouseX = 0;
-let mouseY = 0;
+let mouseX = 0, mouseY = 0;
 
 const base = { hp:1000 };
 
 const player = {
-  x:150,
-  y:300,
-  size:35,
-  speed:4,
-  gunDamage:10,
-  fireRate:250,
-  lastShot:0
+    x: canvas.width*0.1,
+    y: canvas.height/2,
+    size: 50,
+    speed: 5,
+    gunDamage: 10,
+    fireRate: 250,
+    lastShot: 0
 };
 
-// Spawn enemies
-function spawnEnemy(){
-  let hp = 40 + level*10;
-  let speed = 1 + level*0.15;
-  let size = 30;
-
-  if(level % 5 === 0){
-    hp *= 6;
-    speed *= 0.7;
-    size = 60;
-  }
-
-  enemies.push({
-    x:canvas.width+50,
-    y:Math.random()*canvas.height,
-    hp:hp,
-    speed:speed,
-    size:size
-  });
+// Spawn enemies with lower HP
+function spawnEnemy() {
+    let hp = 20 + level*5;
+    let speed = 1 + level*0.15;
+    let size = 40;
+    if(level % 5 === 0){ hp*=4; speed*=0.7; size=70; }
+    enemies.push({x:canvas.width+50, y:Math.random()*canvas.height, hp, speed, size, frame:0});
 }
-setInterval(spawnEnemy,2000);
+setInterval(spawnEnemy, 2000);
 
 // Input
-window.addEventListener("keydown",e=>{
-  keys[e.key]=true;
-  if(e.key==="h" || e.key==="H"){
-    inHangar=!inHangar;
-  }
+window.addEventListener("keydown", e=>{
+    keys[e.key]=true;
+    if(e.key==="h"||e.key==="H") inHangar=!inHangar;
 });
-window.addEventListener("keyup",e=>{
-  keys[e.key]=false;
+window.addEventListener("keyup", e=>keys[e.key]=false);
+canvas.addEventListener("mousemove", e=>{
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
 });
-canvas.addEventListener("mousemove",e=>{
-  const rect=canvas.getBoundingClientRect();
-  mouseX=e.clientX-rect.left;
-  mouseY=e.clientY-rect.top;
-});
-canvas.addEventListener("mousedown",shoot);
+canvas.addEventListener("mousedown", shoot);
 
 function shoot(){
-  if(inHangar) return;
-  let now = Date.now();
-  if(now-player.lastShot < player.fireRate) return;
-  player.lastShot=now;
-  let angle=Math.atan2(mouseY-player.y,mouseX-player.x);
-  bullets.push({
-    x:player.x,
-    y:player.y,
-    vx:Math.cos(angle)*8,
-    vy:Math.sin(angle)*8,
-    damage:player.gunDamage
-  });
+    if(inHangar) return;
+    let now = Date.now();
+    if(now-player.lastShot<player.fireRate) return;
+    player.lastShot=now;
+    let angle = Math.atan2(mouseY-player.y, mouseX-player.x);
+    bullets.push({x:player.x, y:player.y, vx:Math.cos(angle)*10, vy:Math.sin(angle)*10, damage:player.gunDamage});
 }
 
 function explosion(x,y){
-  for(let i=0;i<10;i++){
-    particles.push({
-      x:x,
-      y:y,
-      vx:(Math.random()-0.5)*4,
-      vy:(Math.random()-0.5)*4,
-      life:30
-    });
-  }
+    for(let i=0;i<15;i++){
+        particles.push({x,y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6,life:30+Math.random()*20});
+    }
 }
 
 // Update
 function update(){
-  if(!inHangar){
-    if(keys["ArrowUp"]) player.y-=player.speed;
-    if(keys["ArrowDown"]) player.y+=player.speed;
-    if(keys["ArrowLeft"]) player.x-=player.speed;
-    if(keys["ArrowRight"]) player.x+=player.speed;
+    if(!inHangar){
+        if(keys["ArrowUp"]) player.y -= player.speed;
+        if(keys["ArrowDown"]) player.y += player.speed;
+        if(keys["ArrowLeft"]) player.x -= player.speed;
+        if(keys["ArrowRight"]) player.x += player.speed;
 
-    player.x=Math.max(0,Math.min(canvas.width-player.size,player.x));
-    player.y=Math.max(0,Math.min(canvas.height-player.size,player.y));
+        player.x=Math.max(0,Math.min(canvas.width-player.size, player.x));
+        player.y=Math.max(0,Math.min(canvas.height-player.size, player.y));
 
-    bullets.forEach(b=>{
-      b.x+=b.vx;
-      b.y+=b.vy;
-    });
+        bullets.forEach(b=>{b.x+=b.vx; b.y+=b.vy;});
 
-    enemies.forEach(e=>{
-      let angle=Math.atan2(player.y-e.y,player.x-e.x);
-      e.x+=Math.cos(angle)*e.speed;
-      e.y+=Math.sin(angle)*e.speed;
+        enemies.forEach(e=>{
+            let angle=Math.atan2(player.y-e.y, player.x-e.x);
+            e.x+=Math.cos(angle)*e.speed;
+            e.y+=Math.sin(angle)*e.speed;
+            e.frame+=0.1;
+            if(e.x<140) base.hp-=0.5;
+        });
 
-      if(e.x<120){
-        base.hp-=0.3;
-      }
-    });
+        bullets.forEach(b=>{
+            enemies.forEach(e=>{
+                if(Math.abs(b.x-e.x)<e.size/2 && Math.abs(b.y-e.y)<e.size/2){
+                    e.hp-=b.damage;
+                    b.x=-9999;
+                    if(e.hp<=0){money+=20; explosion(e.x,e.y);}
+                }
+            });
+        });
 
-    bullets.forEach(b=>{
-      enemies.forEach(e=>{
-        if(Math.abs(b.x-e.x)<e.size/2 && Math.abs(b.y-e.y)<e.size/2){
-          e.hp-=b.damage;
-          b.x=9999;
-          if(e.hp<=0){
-            money+=20;
-            explosion(e.x,e.y);
-          }
-        }
-      });
-    });
-
-    particles.forEach(p=>{
-      p.x+=p.vx;
-      p.y+=p.vy;
-      p.life--;
-    });
-    particles=particles.filter(p=>p.life>0);
-    enemies=enemies.filter(e=>e.hp>0);
-
-    if(money>level*150) level++;
-  }
-
-  document.getElementById("level").innerText=level;
-  document.getElementById("money").innerText=money;
-  document.getElementById("basehp").innerText=Math.floor(base.hp);
+        particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;});
+        particles=particles.filter(p=>p.life>0);
+        enemies=enemies.filter(e=>e.hp>0);
+        if(money>level*150) level++;
+    }
+    document.getElementById("level").innerText=level;
+    document.getElementById("money").innerText=money;
+    document.getElementById("basehp").innerText=Math.floor(base.hp);
 }
 
-// Draw Mech
+// Draw player mech
 function drawMech(){
-  let cx = player.x + player.size/2;
-  let cy = player.y + player.size/2;
+    let cx=player.x, cy=player.y;
+    ctx.save();
+    ctx.translate(cx,cy);
+    let angle=Math.atan2(mouseY-cy, mouseX-cx);
+    ctx.rotate(angle);
 
-  ctx.save();
-  ctx.translate(cx,cy);
+    // Body
+    ctx.fillStyle="#2a6cff";
+    ctx.fillRect(-player.size/2,-player.size/3,player.size,player.size*0.7);
 
-  let angle = Math.atan2(mouseY-cy,mouseX-cx);
-  ctx.rotate(angle);
+    // Head
+    ctx.fillStyle="cyan";
+    ctx.beginPath();
+    ctx.arc(0,-player.size*0.25,player.size*0.2,0,Math.PI*2);
+    ctx.fill();
 
-  ctx.fillStyle="#2a6cff";
-  ctx.fillRect(-player.size/2,-player.size/3,player.size,player.size*0.7);
+    // Cannon
+    ctx.fillStyle="gray";
+    ctx.fillRect(0,-6,player.size*0.6,12);
 
-  ctx.fillStyle="cyan";
-  ctx.beginPath();
-  ctx.arc(0,-5,player.size*0.25,0,Math.PI*2);
-  ctx.fill();
+    // Arms
+    ctx.strokeStyle="#555";
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.moveTo(-player.size/2+5,0);
+    ctx.lineTo(-player.size/2-10,10);
+    ctx.moveTo(player.size/2-5,0);
+    ctx.lineTo(player.size/2+10,10);
+    ctx.stroke();
 
-  ctx.fillStyle="gray";
-  ctx.fillRect(0,-5,player.size,10);
+    ctx.restore();
 
-  ctx.restore();
-
-  ctx.fillStyle="#444";
-  ctx.fillRect(player.x+5,player.y+player.size-5,8,12);
-  ctx.fillRect(player.x+player.size-13,player.y+player.size-5,8,12);
+    // Legs
+    ctx.fillStyle="#444";
+    ctx.fillRect(cx-15, cy+player.size/2, 12, 20);
+    ctx.fillRect(cx+3, cy+player.size/2, 12, 20);
 }
 
-// Draw Enemy
+// Draw enemy robot
 function drawEnemy(e){
-  ctx.save();
-  ctx.translate(e.x + e.size/2, e.y + e.size/2);
+    let cx=e.x, cy=e.y;
+    ctx.save();
+    ctx.translate(cx,cy);
+    let bob=Math.sin(e.frame)*5;
 
-  ctx.fillStyle = (level%5===0) ? "#7a00ff" : "#cc2222";
-  ctx.fillRect(-e.size/2,-e.size/2,e.size,e.size);
+    // Body
+    ctx.fillStyle=(level%5===0)?"#7a00ff":"#cc2222";
+    ctx.fillRect(-e.size/2,-e.size/2+bob,e.size,e.size);
 
-  ctx.fillStyle="yellow";
-  ctx.beginPath();
-  ctx.arc(0,0,e.size*0.15,0,Math.PI*2);
-  ctx.fill();
+    // Head
+    ctx.fillStyle="yellow";
+    ctx.beginPath();
+    ctx.arc(0,-e.size*0.15+bob,e.size*0.2,0,Math.PI*2);
+    ctx.fill();
 
-  ctx.fillStyle="#333";
-  ctx.fillRect(-e.size/3,e.size/2,6,10);
-  ctx.fillRect(e.size/3-6,e.size/2,6,10);
+    // Arms
+    ctx.strokeStyle="#333";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(-e.size/2+5,0+bob); ctx.lineTo(-e.size/2-8,5+bob);
+    ctx.moveTo(e.size/2-5,0+bob); ctx.lineTo(e.size/2+8,5+bob);
+    ctx.stroke();
 
-  ctx.restore();
+    // Legs
+    ctx.fillStyle="#333";
+    ctx.fillRect(-e.size/3,e.size/2+bob,6,12);
+    ctx.fillRect(e.size/3-6,e.size/2+bob,6,12);
+
+    ctx.restore();
 }
 
-// Draw
+// Draw futuristic wall
+function drawWall(){
+    const wallX=100;
+    const panelHeight=50;
+    const numPanels=Math.floor(canvas.height/panelHeight)+2;
+    for(let i=0;i<numPanels;i++){
+        const y=i*panelHeight;
+        ctx.fillStyle="#006600";
+        ctx.fillRect(wallX-10,y,20,panelHeight-2);
+        ctx.strokeStyle="#00ff88";
+        ctx.lineWidth=2;
+        ctx.strokeRect(wallX-10,y,20,panelHeight-2);
+    }
+}
+
+// Draw desert rocks
+function drawRocks(){
+    rocks.forEach(r=>{
+        ctx.fillStyle="#804000";
+        ctx.beginPath();
+        ctx.arc(r.x,r.y,r.size/2,0,Math.PI*2);
+        ctx.fill();
+    });
+}
+
+// Draw everything
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Desert gradient background
+    let grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grd.addColorStop(0, "#ffb86c"); // sky
+    grd.addColorStop(1, "#ff8c00"); // sand
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  if(inHangar){
-    ctx.fillStyle="white";
-    ctx.font="40px Arial";
-    ctx.fillText("HANGAR",canvas.width/2-80,120);
+    drawRocks();
+    drawWall();
 
-    ctx.font="22px Arial";
-    ctx.fillText("1 - Upgrade Gun (+5 damage) $150",canvas.width/2-150,250);
-    ctx.fillText("2 - Faster Fire Rate $200",canvas.width/2-150,300);
-    ctx.fillText("3 - Bigger Mech $400",canvas.width/2-150,350);
-    ctx.fillText("Press H to exit",canvas.width/2-80,450);
-    return;
-  }
+    if(inHangar){
+        ctx.fillStyle="white";
+        ctx.font="40px Arial";
+        ctx.fillText("HANGAR", canvas.width/2-80, 120);
+        ctx.font="22px Arial";
+        ctx.fillText("1 - Upgrade Gun (+5 damage) $150", canvas.width/2-150, 250);
+        ctx.fillText("2 - Faster Fire Rate $200", canvas.width/2-150, 300);
+        ctx.fillText("3 - Bigger Mech $400", canvas.width/2-150, 350);
+        ctx.fillText("Press H to exit", canvas.width/2-80, 450);
+        return;
+    }
 
-  ctx.fillStyle="green";
-  ctx.fillRect(100,0,20,canvas.height);
+    drawMech();
 
-  drawMech();
+    ctx.strokeStyle="white";
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y);
+    ctx.lineTo(mouseX, mouseY);
+    ctx.stroke();
 
-  ctx.strokeStyle="white";
-  ctx.beginPath();
-  ctx.moveTo(player.x+player.size/2,player.y+player.size/2);
-  ctx.lineTo(mouseX,mouseY);
-  ctx.stroke();
+    bullets.forEach(b=>{
+        ctx.fillStyle="yellow";
+        ctx.fillRect(b.x,b.y,5,5);
+    });
 
-  bullets.forEach(b=>{
-    ctx.fillStyle="yellow";
-    ctx.fillRect(b.x,b.y,5,5);
-  });
-
-  enemies.forEach(e=>{
-    drawEnemy(e);
-  });
-
-  particles.forEach(p=>{
-    ctx.fillStyle="orange";
-    ctx.fillRect(p.x,p.y,3,3);
-  });
+    enemies.forEach(drawEnemy);
+    particles.forEach(p=>{
+        ctx.fillStyle="orange";
+        ctx.fillRect(p.x,p.y,3,3);
+    });
 }
 
 // Game loop
-function gameLoop(){
-  update();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
+function gameLoop(){ update(); draw(); requestAnimationFrame(gameLoop); }
 gameLoop();
 
 // Hangar upgrades
-window.addEventListener("keydown",e=>{
-  if(!inHangar) return;
-  if(e.key==="1" && money>=150){
-    money-=150;
-    player.gunDamage+=5;
-  }
-  if(e.key==="2" && money>=200){
-    money-=200;
-    player.fireRate-=30;
-  }
-  if(e.key==="3" && money>=400){
-    money-=400;
-    player.size+=8;
-  }
+window.addEventListener("keydown", e=>{
+    if(!inHangar) return;
+    if(e.key==="1" && money>=150){ money-=150; player.gunDamage+=5; }
+    if(e.key==="2" && money>=200){ money-=200; player.fireRate-=30; }
+    if(e.key==="3" && money>=400){ money-=400; player.size+=8; }
 });
 </script>
 
