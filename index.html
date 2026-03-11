@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Last Mech - Desert Battlefield</title>
+<title>mech tower</title>
 <style>
 body {
   margin: 0;
   overflow: hidden;
-  background: black;
-  color: white;
   font-family: Arial;
 }
 #ui {
@@ -15,6 +13,7 @@ body {
   top: 10px;
   left: 10px;
   font-size: 18px;
+  color: white;
 }
 canvas { display: block; }
 </style>
@@ -53,13 +52,17 @@ let inHangar = false;
 
 // Rocks array
 let rocks = [];
-for(let i=0; i<50; i++){
-    rocks.push({
-        x: Math.random()*window.innerWidth,
-        y: Math.random()*window.innerHeight,
-        size: 10 + Math.random()*20
-    });
+function generateRocks() {
+    rocks = [];
+    for(let i=0; i<50; i++){
+        rocks.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            size: 10 + Math.random()*20
+        });
+    }
 }
+generateRocks();
 
 const keys = {};
 let mouseX = 0, mouseY = 0;
